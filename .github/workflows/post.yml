@@ -1,0 +1,42 @@
+name: Auto Post Instagram Reels
+
+on:
+  schedule:
+    # Runs daily at 12:00 UTC
+    - cron: "0 12 * * *"
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  post_reels:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run posting script
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ID: ${{ secrets.INSTAGRAM_BUSINESS_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          POSTS_PER_DAY: 1
+        run: python post_reel.py
+
+      - name: Commit updated Excel file and Logs
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add reels.xlsx logs/posting.log
+          git commit -m "chore: Update reel status and logs" || echo "No changes to commit"
+          git push
