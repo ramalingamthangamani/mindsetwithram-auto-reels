@@ -2,41 +2,48 @@ name: Auto Post Instagram Reels
 
 on:
   schedule:
-    # Runs daily at 12:00 UTC
-    - cron: "0 12 * * *"
-  workflow_dispatch: # Allows manual trigger
+    # 03:30 UTC = 09:00 AM IST
+    # 09:30 UTC = 03:00 PM IST
+    # 15:30 UTC = 09:00 PM IST
+    - cron: '30 3,9,15 * * *'
+  workflow_dispatch: # Allow manual trigger for testing
 
 jobs:
-  post_reels:
+  post-reel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit and push current_index.txt
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # We only need the latest commit to push changes
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.10'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run posting script
+      - name: Run post_reel.py
         env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          INSTAGRAM_BUSINESS_ID: ${{ secrets.INSTAGRAM_BUSINESS_ID }}
-          PAGE_ID: ${{ secrets.PAGE_ID }}
-          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          POSTS_PER_DAY: 1
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: python post_reel.py
 
-      - name: Commit updated Excel file and Logs
+      - name: Commit and Push current_index.txt
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add reels.xlsx logs/posting.log
-          git commit -m "chore: Update reel status and logs" || echo "No changes to commit"
-          git push
+          git add current_index.txt
+          # Only commit if there are changes
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update current_index.txt [skip ci]" && git push)

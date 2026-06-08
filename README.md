@@ -1,80 +1,45 @@
-# MindsetWithRam Auto Reels
+# Instagram Reel Automation (Cloudinary + GitHub Actions)
 
-Fully automated Instagram Reel posting pipeline built with Python and GitHub Actions.
+This project automates posting Instagram Reels 3 times a day using GitHub Actions. It fetches videos from a Cloudinary account, retrieves corresponding captions and hashtags from a local CSV database, and publishes them via the Instagram Graph API.
 
-## Architecture
+## Workflow Summary
+- **Schedule**: The GitHub Action runs daily at `09:00 AM IST`, `03:00 PM IST`, and `09:00 PM IST`.
+- **State Management**: `current_index.txt` keeps track of the reel number that needs to be posted next.
+- **Process**:
+  1. Action triggers and reads `current_index.txt`.
+  2. Queries Cloudinary for all video resources and finds the one matching `reel_{current_index}`.
+  3. Queries `captions.csv` for the caption corresponding to `reel_{current_index}.mp4`.
+  4. Publishes to Instagram via Graph API.
+  5. Updates `current_index.txt` (+1) and commits it back to the repository automatically.
 
-Google Drive (Reels) → Excel (Captions/Status) → Python → Instagram Graph API → GitHub Actions → Daily Automatic Posting
-
-## Prerequisites
-
-1. **Python 3.12+**
-2. **Meta Developer App**:
-   - Create an app at [Meta for Developers](https://developers.facebook.com/).
-   - Setup Instagram Graph API.
-   - Get your `ACCESS_TOKEN` (Long-lived token recommended), `INSTAGRAM_BUSINESS_ID`, and `PAGE_ID`.
-3. **Google Drive**:
-   - Ensure the videos in Google Drive are accessible.
-   - You can get the file ID from a shareable link.
-   - *Note on Meta Graph API*: Instagram requires a public video URL to upload a Reel. You must make sure your Google Drive links are publicly accessible or use direct download links in the Excel file.
+## Requirements
+- GitHub repository with Actions enabled.
+- Cloudinary account.
+- Instagram Professional/Business Account linked to a Facebook Page.
+- Facebook Developer App with Instagram Graph API access.
 
 ## Setup Instructions
 
-### 1. Local Configuration
+### 1. Add GitHub Secrets
+Navigate to your repository settings on GitHub: **Settings > Secrets and variables > Actions**. Add the following repository secrets:
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Copy `.env.example` to `.env` and fill in the required values:
-   ```bash
-   cp .env.example .env
-   ```
-3. Run the application once locally to generate the template `reels.xlsx`:
-   ```bash
-   python post_reel.py
-   ```
+- `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name.
+- `CLOUDINARY_API_KEY`: Your Cloudinary API key.
+- `CLOUDINARY_API_SECRET`: Your Cloudinary API secret.
+- `ACCESS_TOKEN`: The Facebook/Instagram Graph API long-lived access token.
+- `IG_USER_ID`: Your Instagram Business Account ID.
 
-### 2. Excel Format (`reels.xlsx`)
+### 2. Prepare Cloudinary
+Upload your reels to Cloudinary. The automation script will search through all video assets. Ensure your filenames contain the reel number in the format `reel_1`, `reel_2_pe675n`, `reel_507`, etc.
 
-Fill in the generated `reels.xlsx` file with your 507 reels.
+### 3. Setup Captions Database
+Ensure `captions.csv` is at the root of the repository. It must contain the columns:
+- `FileName` (e.g. `reel_1.mp4`)
+- `Caption` (Text caption)
+- `Hashtags` (Space-separated hashtags)
 
-| FileName | Caption | Hashtags | Status | PostedDate |
-| :--- | :--- | :--- | :--- | :--- |
-| `1x2y3z...` (Drive File ID) or URL | Mindset tip! | #mindset #growth | Pending | |
-| `a1b2c3...` | Stay focused! | #focus | Pending | |
+### 4. Set Starting Index
+Update `current_index.txt` with the reel number you want to start posting from. If left empty, it defaults to `1`.
 
-- **FileName**: The Google Drive File ID or a direct public URL to the `.mp4` file.
-- **Status**: Must be exactly `Pending` to be picked up by the script. (Will update to `Posted` or `Failed`).
-
-### 3. GitHub Secrets Setup
-
-To run this pipeline completely automated (computer OFF), configure the following repository secrets in your GitHub repository:
-Navigate to **Settings > Secrets and variables > Actions > New repository secret**.
-
-- `ACCESS_TOKEN`
-- `INSTAGRAM_BUSINESS_ID`
-- `PAGE_ID`
-- `GOOGLE_DRIVE_FOLDER_ID`
-
-### 4. Deployment
-
-Push your code and the filled `reels.xlsx` to GitHub:
-
-```bash
-git add .
-git commit -m "Initial commit with reels"
-git push origin main
-```
-
-The GitHub Action (`.github/workflows/post.yml`) will run automatically every day at 12:00 UTC. It will read the Excel file, download the next pending video, publish it to Instagram, update the Excel file's status, and commit the changes back to the repository.
-
-You can also trigger it manually from the "Actions" tab in GitHub.
-
-## Local Testing
-
-To verify dependencies and ensure basic scripts are running correctly, run tests via pytest:
-
-```bash
-pytest tests/
-```
+### 5. Running Manually
+You can manually trigger the workflow from the **Actions** tab in GitHub by selecting the `Auto Post Instagram Reels` workflow and clicking `Run workflow`.
