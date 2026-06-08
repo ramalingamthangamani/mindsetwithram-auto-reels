@@ -3,9 +3,10 @@ name: Auto Post Instagram Reels
 on:
   schedule:
     # 03:30 UTC = 09:00 AM IST
-    # 09:30 UTC = 03:00 PM IST
+    # 06:30 UTC = 12:00 PM IST
+    # 12:30 UTC = 06:00 PM IST
     # 15:30 UTC = 09:00 PM IST
-    - cron: '30 3,9,15 * * *'
+    - cron: '30 3,6,12,15 * * *'
   workflow_dispatch: # Allow manual trigger for testing
 
 jobs:
