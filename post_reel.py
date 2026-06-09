@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import time
@@ -183,7 +184,7 @@ def main():
     
     if not all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, ACCESS_TOKEN, IG_USER_ID]):
         logger.error("Missing one or more required environment variables (Cloudinary or IG).")
-        return
+        sys.exit(1)
         
     current_index = get_current_index()
     logger.info(f"Current Reel Index to post: {current_index}")
@@ -192,7 +193,7 @@ def main():
     videos = fetch_cloudinary_videos()
     if not videos:
         logger.error("No videos found in Cloudinary.")
-        return
+        sys.exit(1)
         
     # 2. Find the correct video
     target_video = None
@@ -203,7 +204,7 @@ def main():
             
     if not target_video:
         logger.error(f"Could not find video for reel_{current_index} in Cloudinary.")
-        return
+        sys.exit(1)
         
     logger.info(f"Found target video: {target_video['public_id']} ({target_video['url']})")
     
@@ -214,12 +215,12 @@ def main():
     # 4. Create Container
     container_id = create_ig_container(target_video["url"], caption)
     if not container_id:
-        return
+        sys.exit(1)
         
     # 5. Check Status
     is_ready = check_container_status(container_id)
     if not is_ready:
-        return
+        sys.exit(1)
         
     # 6. Publish
     success = publish_container(container_id)
@@ -229,6 +230,7 @@ def main():
         logger.info("=== Post complete and index updated! ===")
     else:
         logger.error("=== Post failed, index not updated ===")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
